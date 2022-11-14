@@ -297,7 +297,7 @@
           _websocket.onmessage = function (msg) {
             c++;
             var ddata = JSON.parse(msg.data);
-            console.log(ddata);
+            console.log("Websocket Response: ", ddata);
             if (c == 1) {
               var hb_interval = handleData(ddata);
               sessionStorage.setItem("Configuration", hb_interval);
@@ -307,10 +307,10 @@
             if (ddata[0] === 3) {
               la = getLastAction();
 
-              if (la == "startTransaction") {
-                ddata = ddata[2];
+              if (la === "startTransaction") {
+                //ddata = ddata[2];
                 logMsg("Data exchange successful!");
-                var array = $.map(ddata, function (value, index) {
+                var array = $.map(ddata[2], function (value, index) {
                   return [value];
                 });
                 var TransactionId = array[0];
@@ -318,9 +318,8 @@
                 logMsg("TransactionId: " + TransactionId);
                 console.log("TransactionId: " + JSON.stringify(TransactionId));
                 document.getElementById("ConnectorStatus").value = "Charging";
-              }
-              if (la === "stopTransaction") {
-                document.getElementById("ConnectorStatus").value = "Charging";
+              } else if (la === "stopTransaction") {
+                document.getElementById("ConnectorStatus").value = "Available";
               }
               logMsg("Response: " + JSON.stringify(ddata[2]));
             } else if (JSON.parse(msg.data)[0] === 4) {
@@ -407,6 +406,7 @@
           "Authorize",
           { idTag: $("#TAG").val() },
         ]);
+        console.log("Authorize payload: ", Auth);
         _websocket.send(Auth);
       }
 
@@ -419,7 +419,7 @@
         var connectorId = parseInt($("#CUID").val());
         console.log("connectorId", connectorId);
         var strtT = JSON.stringify([
-          connectorId,
+          2,
           id,
           "StartTransaction",
           {
@@ -430,29 +430,35 @@
             reservationId: 0,
           },
         ]);
+        console.log("startTransaction websocket payload: ", strtT);
         _websocket.send(strtT);
       }
 
       function stopTransaction(transaction_id = false) {
         sessionStorage.setItem("LastAction", "stopTransaction");
-        transaction_id == false
-          ? (ssid = sessionStorage.getItem("TransactionId"))
-          : (ssid = transaction_id);
+        if (transaction_id === false) {
+          transaction_id = sessionStorage.getItem("TransactionId");
+        }
+        // transaction_id == false
+        //   ? (ssid = sessionStorage.getItem("TransactionId"))
+        //   : (ssid = transaction_id);
+        console.log("stopTransaction transaction_id: ", transaction_id);
         $(".indicator").hide();
         connector_locked = false;
         logMsg("Connector status changed to: " + connector_locked);
         $("#yellow").show();
         var stpT = JSON.stringify([
-          Number($("#transactionId").val()),
+          2,
           id,
           "StopTransaction",
           {
-            transactionId: Number($("#transactionId").val()),
+            transactionId: transaction_id,
             idTag: $("#TAG").val(),
             timestamp: formatDate(new Date()),
             meterStop: 20,
           },
         ]);
+        console.log("stopTransaction websocket payload: ", stpT);
         _websocket.send(stpT);
       }
 
